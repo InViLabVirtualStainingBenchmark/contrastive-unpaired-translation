@@ -324,9 +324,9 @@ This file is what gets adapted for the HPC migration later.
 Note any packages that are unusual, very large, or likely to cause conflicts on the cluster.
 -->
 
-- **Environment file:** `environment_<model-name>.yml`
-- **Committed to fork:** yes / no
-- **Notes on unusual or heavy dependencies:**
+- **Environment file:** `environment_cut.yml`
+- **Committed to fork:** yes
+- **Notes on unusual or heavy dependencies:** visdom included (GUI-based training visualizer, must be neutralized on HPC -- no display available on compute nodes)
 <!-- e.g. "requires openslide-python which needs a system-level apt install" -->
 
 ---
@@ -341,11 +341,14 @@ dependencies that require apt/system installs, very large model downloads.
 Leave blank until local test is complete.
 -->
 
-- **Display/GUI dependencies to remove or neutralize:**
-- **System-level dependencies (non-pip/conda):**
-- **Estimated GPU memory requirement:**
-- **Estimated storage requirement (weights + data):**
+- **Display/GUI dependencies to remove or neutralize:** visdom is imported in train.py for live loss plotting -- must be disabled with --display_id 0 on cluster jobs
+- **System-level dependencies (non-pip/conda):** none
+- **Estimated GPU memory requirement:** ~20GB peak (from nvidia-smi during smoke test training)
+- **Estimated storage requirement (weights + data):** ~261MB pretrained weights, ~1.5GB BCI-cut, ~2.5GB MIST-HER2-cut
 - **Other notes for cluster adaptation:**
+    - LD_LIBRARY_PATH=/usr/lib/wsl/lib fix is WSL2-specific, not needed on cluster
+    - Full benchmark run must use --load_size 1024 --crop_size 1024 to match native GT resolution
+    - Default output is 256x256 which does not match GT 1024x1024 -- confirmed via evaluate.py size mismatch warnings
 
 ---
 
@@ -357,7 +360,15 @@ Be specific. Include the overall pass/fail verdict.
 This is the first thing someone reads when picking this model back up.
 -->
 
-**Overall result:** PASS / FAIL / PARTIAL
+**Overall result:** PASS
+
+- CUT smoke test completed on 2026-04-21. 
+- Environment created with Python 3.8.20 and PyTorch 1.13.1 (authors specified 1.4.0, incompatible with CUDA 12.1). 
+- Inference with pretrained horse2zebra weights passed on 20 BCI test images.
+- Training ran for 5 epochs on 200 BCI image pairs without crash, checkpoints saved at every epoch, and inference from the training checkpoint produced 20 IHC-like outputs with correct domain shift.
+- evaluate.py confirmed the full evaluation pipeline works end to end. 
+- One resolution mismatch identified:
+    - CUT default output is 256x256 while GT is 1024x1024 -- full benchmark run must add --load_size 1024 --crop_size 1024. Ready for full benchmark run on HPC after cluster port.
 
 <!-- Example pass:
 "[Model] smoke test completed on [date]. Inference with pretrained weights passed on 10 BCI test images.
