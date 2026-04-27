@@ -16,6 +16,9 @@
 # Computes PSNR, SSIM, MS-SSIM, LPIPS (AlexNet + VGG), MAE, FID.
 # Appends results to the shared benchmark_results.csv on $VSC_DATA.
 #
+# Uses the shared eval venv at $VSC_DATA/evaluate/venv_eval/.
+# That venv must exist -- run install_eval.sh first if it does not.
+#
 # Submit ONLY after infer_BCI_full.sh has completed successfully.
 # Submit: sbatch eval_BCI_full.sh
 #
@@ -33,6 +36,7 @@ PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/test_latest/images/fa
 GT_DIR="$VSC_SCRATCH/dataset/BCI/IHC/test"
 OUTPUT_CSV="$VSC_DATA/benchmark_results.csv"
 EVAL_SCRIPT="$VSC_DATA/evaluate/evaluate.py"
+VENV_DIR="$VSC_DATA/evaluate/venv_eval"
 
 # =========================
 # MODULES
@@ -43,7 +47,7 @@ module load calcua/2023a
 module load SciPy-bundle/2023.07-gfbf-2023a
 module load PyTorch-bundle/2.1.2-foss-2023a-CUDA-12.1.1
 
-source "$VSC_DATA/projects/cut/venv_cut/bin/activate"
+source "$VENV_DIR/bin/activate"
 
 # =========================
 # PRE-FLIGHT CHECKS
@@ -74,7 +78,6 @@ echo ""
 echo "=== evaluate.py check ==="
 if [ ! -f "$EVAL_SCRIPT" ]; then
     echo "ERROR: evaluate.py not found at $EVAL_SCRIPT"
-    echo "Clone the evaluate repo first: git clone <URL> \$VSC_DATA/evaluate"
     deactivate; exit 1
 fi
 echo "  evaluate.py found"

@@ -12,9 +12,10 @@
 #SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/install.%j.err
 
 # install.sh
-# Creates the cluster venv and pip-installs all packages not provided by
-# the PyTorch module stack. Also installs evaluation dependencies so the
-# eval jobs can reuse the same venv.
+# Creates the CUT model venv and pip-installs all packages not provided by
+# the PyTorch module stack.
+# Evaluation dependencies live in a separate shared venv at
+# $VSC_DATA/evaluate/venv_eval/ -- see install_eval.sh.
 #
 # Submit: sbatch install.sh
 # Check:  cat $VSC_DATA/projects/cut/logs/install.<jobid>.out
@@ -55,24 +56,14 @@ python -m pip install --upgrade pip
 
 # =========================
 # CUT DEPENDENCIES
-# Not provided by the module stack.
+# Only packages not provided by the module stack.
+# Eval deps are in $VSC_DATA/evaluate/venv_eval/ -- do not add them here.
 # =========================
 
 python -m pip install \
     dominate \
     visdom \
     gputil \
-    --no-cache-dir
-
-# =========================
-# EVALUATION DEPENDENCIES
-# Shared with evaluate.py -- installed here so eval jobs reuse this venv.
-# =========================
-
-python -m pip install \
-    torchmetrics \
-    lpips \
-    torch-fidelity \
     --no-cache-dir
 
 # =========================
@@ -86,8 +77,8 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 python -c "import numpy; print('numpy:', numpy.__version__)"
 python -c "import dominate; print('dominate ok')"
 python -c "import visdom; print('visdom ok')"
-python -c "import torchmetrics, lpips, torch_fidelity; print('eval deps ok')"
 
 deactivate
 echo ""
 echo "Install job complete. All checks passed."
+echo "Next: verify install_eval.sh has also completed before submitting train_validate.sh"
