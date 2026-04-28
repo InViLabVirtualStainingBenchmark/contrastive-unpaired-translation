@@ -14,6 +14,8 @@
 # install.sh
 # Creates the CUT model venv and pip-installs all packages not provided by
 # the PyTorch module stack.
+# Visdom is intentionally excluded -- all training scripts use --display_id 0
+# which disables browser visualisation entirely.
 # Evaluation dependencies live in a separate shared venv at
 # $VSC_DATA/evaluate/venv_eval/ -- see install_eval.sh.
 #
@@ -57,12 +59,12 @@ python -m pip install --upgrade pip
 # =========================
 # CUT DEPENDENCIES
 # Only packages not provided by the module stack.
+# visdom excluded -- training uses --display_id 0 (no browser visualisation).
 # Eval deps are in $VSC_DATA/evaluate/venv_eval/ -- do not add them here.
 # =========================
 
 python -m pip install \
     dominate \
-    visdom \
     gputil \
     --no-cache-dir
 
@@ -76,9 +78,9 @@ python -c "import torch; print('torch:', torch.__version__)"
 python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 python -c "import numpy; print('numpy:', numpy.__version__)"
 python -c "import dominate; print('dominate ok')"
-python -c "import visdom; print('visdom ok')"
+python -c "import GPUtil; print('gputil ok')"
 
 deactivate
 echo ""
 echo "Install job complete. All checks passed."
-echo "Next: verify install_eval.sh has also completed before submitting train_validate.sh"
+echo "Next: confirm install_eval.sh has also completed, then sbatch train_validate.sh"
