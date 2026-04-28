@@ -1,33 +1,31 @@
 #!/bin/bash
-#SBATCH --job-name=cut_train_MIST_512
+#SBATCH --job-name=cut_train_MIST_512_p1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=XX:00:00
+#SBATCH --time=16:00:00
 #SBATCH -A ap_invilab_td_thesis
 #SBATCH -p ampere_gpu
 #SBATCH --gres=gpu:1
-#SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/train_MIST_512.%j.out
-#SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/train_MIST_512.%j.err
+#SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/train_MIST_512_p1.%j.out
+#SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/train_MIST_512_p1.%j.err
 
-# train_MIST-HER2_512_e100.sh
-# Full 100-epoch CUT training on the MIST-HER2 dataset at 512x512 resolution.
-# 50 epochs constant LR + 50 epochs linear LR decay = 100 total.
-# Val split (valA/valB) is used as the test split -- no separate test set exists.
+# train_MIST-HER2_full_e100_part1.sh
+# Epochs 1-50 of CUT training on MIST-HER2 at 512x512.
+# Constant LR throughout (n_epochs_decay=0).
+# MIST-HER2 has 4642 training images -- too slow to finish 100 epochs in one 24h job.
+# This is part 1 of 2. Part 2 resumes from the latest checkpoint and applies LR decay.
 #
-# TODO: Replace XX:00:00 above with the correct wall time before submitting.
-#       Formula: (time_per_iter * iters_per_epoch / 60) * 100 * 1.20 = minutes needed.
-#       Round up to the nearest hour.
+# DO NOT submit part 2 manually -- use submit_MIST_e100.sh which chains them automatically.
+# Or if submitting manually, wait for this job to complete before submitting part 2.
 #
-# Submit ONLY after train_validate_MIST_512.sh has passed.
-# Submit: sbatch train_MIST-HER2_512_e100.sh
-# Can be submitted at the same time as train_BCI_512_e100.sh.
+# Submit via wrapper (recommended):
+#   bash hpc_jobs/512_e100/submit_MIST_e100.sh
 #
 # Monitor:
 #   squeue -u $USER
-#   tail -f $VSC_DATA/projects/cut/logs/train_MIST_512.<jobid>.out
-#   tail -5 $VSC_DATA/projects/cut/logs/gpu_train_MIST_512.csv
+#   tail -f $VSC_DATA/projects/cut/logs/train_MIST_512_p1.<jobid>.out
 #
 # Checkpoints saved every 25 epochs to:
 #   $VSC_DATA/projects/cut/outputs/checkpoints/MIST-HER2_512_e100/
@@ -81,7 +79,7 @@ echo "  train.py found"
 
 nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total \
            --format=csv -l 5 \
-    > "$VSC_DATA/projects/cut/logs/gpu_train_MIST_512.csv" & GPU_LOG_PID=$!
+    > "$VSC_DATA/projects/cut/logs/gpu_train_MIST_512_p1.csv" & GPU_LOG_PID=$!
 
 # =========================
 # TRAINING
@@ -90,7 +88,7 @@ nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total \
 cd "$REPO_DIR"
 
 echo ""
-echo "=== Starting full MIST-HER2 training (100 epochs, 512x512) ==="
+echo "=== Starting MIST-HER2 training part 1 (epochs 1-50, constant LR) ==="
 echo "  run name    : $RUN_NAME"
 echo "  data        : $DATA_ROOT"
 echo "  checkpoints : $CHECKPOINTS_DIR/$RUN_NAME"
@@ -104,7 +102,7 @@ python train.py \
     --crop_size 512 \
     --display_id 0 \
     --n_epochs 50 \
-    --n_epochs_decay 50 \
+    --n_epochs_decay 0 \
     --save_epoch_freq 25 \
     --no_html \
     --gpu_ids 0
@@ -121,8 +119,8 @@ find "$CHECKPOINTS_DIR/$RUN_NAME" -name "*.pth" | sort
 
 echo ""
 echo "=== GPU log tail ==="
-tail -3 "$VSC_DATA/projects/cut/logs/gpu_train_MIST_512.csv"
+tail -3 "$VSC_DATA/projects/cut/logs/gpu_train_MIST_512_p1.csv"
 
 deactivate
 echo ""
-echo "MIST-HER2 full training complete. Next step: sbatch infer_MIST-HER2_512_e100.sh"
+echo "MIST-HER2 part 1 complete (epochs 1-50). Part 2 should start automatically if submitted via wrapper."
