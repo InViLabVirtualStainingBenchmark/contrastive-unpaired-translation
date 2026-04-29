@@ -27,19 +27,19 @@ Run all commands from the cluster login node unless stated otherwise.
 
 ## Script inventory
 
-| Script                         | Type          | What it does                                                                            |
-|--------------------------------|---------------|-----------------------------------------------------------------------------------------|
-| `setup_project.sh`             | bash (manual) | Creates folder tree under `$VSC_DATA` and `$VSC_SCRATCH`                                |
-| `prepare_datasets.sh`          | bash (manual) | Creates `cut-BCI` and `cut-MIST-HER2` symlink folders on scratch                        |
-| `install.sh`                   | sbatch        | Builds CUT model venv, pip-installs CUT deps, runs sanity checks                        |
-| `install_eval.sh`              | sbatch        | Builds shared eval venv at `$VSC_DATA/evaluate/venv_eval/`, pre-downloads LPIPS weights |
-| `train_validate.sh`            | sbatch        | 5-epoch BCI run -- confirmation gate before full runs                                   |
-| `train_BCI_full_e400.sh`       | sbatch        | Full 400-epoch CUT training on BCI                                                      |
-| `train_MIST-HER2_full_e400.sh` | sbatch        | Full 400-epoch CUT training on MIST-HER2                                                |
-| `infer_BCI_full.sh`            | sbatch        | Inference on full BCI test split                                                        |
-| `infer_MIST-HER2_full.sh`      | sbatch        | Inference on full MIST-HER2 test split                                                  |
-| `eval_BCI_full.sh`             | sbatch        | Runs evaluate.py on BCI predictions using shared eval venv                              |
-| `eval_MIST-HER2_full.sh`       | sbatch        | Runs evaluate.py on MIST-HER2 predictions using shared eval venv                        |
+| Script                         | Type              | What it does                                                                                                                                                                                                   |
+|--------------------------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setup_project.sh`             | bash (manual)     | Creates folder tree under `$VSC_DATA` and `$VSC_SCRATCH`                                                                                                                                                       |
+| `prepare_datasets.sh`          | bash (manual)     | Creates `cut-BCI` and `cut-MIST-HER2` symlink folders on scratch                                                                                                                                               |
+| `install.sh`                   | sbatch            | Builds CUT model venv, pip-installs CUT deps, runs sanity checks                                                                                                                                               |
+| `install_eval.sh`              | bash (login node) | **Lives in the evaluate repo** (`$VSC_DATA/evaluate/hpc_jobs/`). Builds shared eval venv, pre-downloads LPIPS and Cellpose weights. Shared across all models. Run directly on the login node — not via sbatch. |
+| `train_validate.sh`            | sbatch            | 5-epoch BCI run -- confirmation gate before full runs                                                                                                                                                          |
+| `train_BCI_full_e400.sh`       | sbatch            | Full 400-epoch CUT training on BCI                                                                                                                                                                             |
+| `train_MIST-HER2_full_e400.sh` | sbatch            | Full 400-epoch CUT training on MIST-HER2                                                                                                                                                                       |
+| `infer_BCI_full.sh`            | sbatch            | Inference on full BCI test split                                                                                                                                                                               |
+| `infer_MIST-HER2_full.sh`      | sbatch            | Inference on full MIST-HER2 test split                                                                                                                                                                         |
+| `eval_BCI_full.sh`             | sbatch            | Runs evaluate.py on BCI predictions using shared eval venv                                                                                                                                                     |
+| `eval_MIST-HER2_full.sh`       | sbatch            | Runs evaluate.py on MIST-HER2 predictions using shared eval venv                                                                                                                                               |
 
 ---
 
@@ -98,7 +98,12 @@ Verify:
 ```bash
 ls $VSC_DATA/evaluate
 ```
-Expected: `evaluate.py  environment.yml  README.md`
+Expected: `evaluate.py  environment.yml  hpc_jobs  README.md`
+
+```bash
+ls $VSC_DATA/evaluate/hpc_jobs
+```
+Expected: `cluster_plan.md  install_eval.sh`
 
 **Step A6 -- Transfer datasets via WinSCP (run from the lab PC, not the cluster)**
 
@@ -146,11 +151,16 @@ Expected: non-zero counts for all four (BCI: 3896, MIST-HER2: 4642).
 
 Both install jobs are independent and can be submitted at the same time.
 
-**Step B1 -- Submit both install jobs**
+**Step B1 -- Install environments**
 
+CUT model venv (sbatch job — no internet required, modules handle PyTorch):
 ```bash
 sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/install.sh
-sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/install_eval.sh
+```
+
+Shared eval venv (run directly on login node — requires internet for weight downloads):
+```bash
+bash $VSC_DATA/evaluate/hpc_jobs/install_eval.sh
 ```
 
 **Step B2 -- Monitor**
