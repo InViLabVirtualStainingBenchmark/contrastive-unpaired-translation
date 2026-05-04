@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=60G
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH -A ap_invilab_td_thesis
 #SBATCH -p ampere_gpu
 #SBATCH --gres=gpu:1
