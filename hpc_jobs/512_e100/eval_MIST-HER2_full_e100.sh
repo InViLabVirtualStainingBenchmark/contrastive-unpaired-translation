@@ -1,26 +1,28 @@
 #!/bin/bash
-#SBATCH --job-name=cut_eval_MIST_512
+#SBATCH --job-name=cut_eval_MIST
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --time=00:30:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=60G
+#SBATCH --time=01:00:00
 #SBATCH -A ap_invilab_td_thesis
 #SBATCH -p ampere_gpu
 #SBATCH --gres=gpu:1
-#SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST_512.%j.out
-#SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST_512.%j.err
+#SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST.%j.out
+#SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST.%j.err
 
-# eval_MIST-HER2_full_e100.sh
+# eval_MIST-HER2_full.sh
 # Runs evaluate.py on MIST-HER2 inference outputs.
-# Computes PSNR, SSIM, MS-SSIM, LPIPS (AlexNet + VGG), MAE, FID.
+# Computes PSNR, SSIM, MS-SSIM, LPIPS (AlexNet + VGG), MAE, FID,
+# and Cellpose cell-detection metrics (precision, recall, F1) on 100 sampled pairs.
 # Appends results to the shared benchmark_results.csv on $VSC_DATA.
 #
 # Uses the shared eval venv at $VSC_DATA/evaluate/venv_eval/.
 # That venv must exist -- run install_eval.sh first if it does not.
+# Cellpose cyto2 weights must be pre-downloaded (install_eval.sh handles this).
 #
-# Submit ONLY after infer_MIST-HER2_full_e100.sh has completed successfully.
-# Submit: sbatch eval_MIST-HER2_full_e100.sh
+# Submit ONLY after infer_MIST-HER2_full.sh has completed successfully.
+# Submit: sbatch eval_MIST-HER2_full.sh
 #
 # Results written to:
 #   $VSC_DATA/benchmark_results.csv  (shared table, append)
@@ -58,10 +60,14 @@ which python
 python -c "import torch; print('torch:', torch.__version__, '| CUDA:', torch.cuda.is_available())"
 
 echo ""
+echo "=== Cellpose check ==="
+python -c "import importlib.metadata; print('cellpose:', importlib.metadata.version('cellpose'))"
+
+echo ""
 echo "=== Prediction folder check ==="
 if [ ! -d "$PRED_DIR" ]; then
     echo "ERROR: Prediction folder not found: $PRED_DIR"
-    echo "Has infer_MIST-HER2_full_e100.sh completed successfully?"
+    echo "Has infer_MIST-HER2_full.sh completed successfully?"
     deactivate; exit 1
 fi
 echo "  Prediction images: $(find "$PRED_DIR" -name '*.png' | wc -l)"
@@ -88,9 +94,10 @@ echo "  evaluate.py found"
 
 echo ""
 echo "=== Running evaluate.py ==="
-echo "  pred       : $PRED_DIR"
-echo "  gt         : $GT_DIR"
-echo "  output csv : $OUTPUT_CSV"
+echo "  pred          : $PRED_DIR"
+echo "  gt            : $GT_DIR"
+echo "  output csv    : $OUTPUT_CSV"
+echo "  cellpose      : cyto2, 100 pairs sampled (seed=42)"
 
 python "$EVAL_SCRIPT" \
     --pred "$PRED_DIR" \
@@ -99,7 +106,10 @@ python "$EVAL_SCRIPT" \
     --dataset_name MIST-HER2 \
     --split_name test \
     --match_by stem \
-    --output "$OUTPUT_CSV"
+    --output "$OUTPUT_CSV" \
+    --cellpose \
+    --cellpose_model cyto2 \
+    --cellpose_n 100
 
 echo ""
 echo "=== Results written ==="
