@@ -78,7 +78,7 @@ if [ ! -d "$GT_DIR" ]; then
     echo "ERROR: Ground truth folder not found: $GT_DIR"
     deactivate; exit 1
 fi
-echo "  Ground truth images: $(find "$GT_DIR" -name '*.png' | wc -l)"
+echo "  Ground truth images: $(find "$GT_DIR" \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.tif' -o -name '*.tiff' \) | wc -l)"
 
 echo ""
 echo "=== evaluate.py check ==="
