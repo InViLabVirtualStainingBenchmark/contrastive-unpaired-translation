@@ -17,6 +17,10 @@
 # and Cellpose cell-detection metrics (precision, recall, F1) on 100 sampled pairs.
 # Appends results to the shared benchmark_results.csv on $VSC_DATA.
 #
+# NOTE: The cluster's Apptainer auto-binds the host /data/ filesystem into every
+# container, masking any /data/ subdirectories created during the container build.
+# Squashfs archives are therefore mounted to paths under $VSC_SCRATCH instead.
+#
 # Prerequisites:
 #   - infer_BCI_full.sh must have completed successfully
 #   - $VSC_SCRATCH/containers/evaluate_nvidia.sif must exist
@@ -30,8 +34,9 @@ set -euo pipefail
 CONTAINER="$VSC_SCRATCH/containers/evaluate_nvidia.sif"
 RUN_NAME="BCI_512_e100"
 PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/test_latest/images/fake_B"
-GT_DIR="/data/BCI/IHC/test"
 BCI_SQSH="$VSC_SCRATCH/BCI.sqsh"
+BCI_MNT="$VSC_SCRATCH/sqsh_mnt/BCI"
+GT_DIR="$BCI_MNT/IHC/test"
 OUTPUT_CSV="$VSC_DATA/benchmark_results.csv"
 EVAL_SCRIPT="$VSC_DATA/evaluate/evaluate.py"
 
@@ -46,16 +51,16 @@ module load calcua/2026.1
 # PRE-FLIGHT CHECKS
 # =========================
 
-echo "=== Environment ==="
-apptainer exec --nv $CONTAINER python -c "import torch; print('torch:', torch.__version__, '| CUDA:', torch.cuda.is_available())"
-
-echo ""
 echo "=== Container check ==="
 if [ ! -f "$CONTAINER" ]; then
     echo "ERROR: container not found: $CONTAINER"
     exit 1
 fi
 echo "  Container found: $CONTAINER"
+
+echo ""
+echo "=== Environment ==="
+apptainer exec --nv "$CONTAINER" python -c "import torch; print('torch:', torch.__version__, '| CUDA:', torch.cuda.is_available())"
 
 echo ""
 echo "=== SquashFS check ==="
@@ -86,17 +91,19 @@ echo "  evaluate.py found"
 # EVALUATION
 # =========================
 
+mkdir -p "$BCI_MNT"
+
 echo ""
 echo "=== Running evaluate.py ==="
 echo "  pred       : $PRED_DIR"
-echo "  gt         : $GT_DIR (inside BCI.sqsh)"
+echo "  gt         : $GT_DIR (inside BCI.sqsh mounted at $BCI_MNT)"
 echo "  output csv : $OUTPUT_CSV"
-echo "  cellpose   : cpsam, 10 pairs sampled"
+echo "  cellpose   : cpsam, 100 pairs sampled"
 
 srun apptainer exec --nv \
-    -B $VSC_DATA:$VSC_DATA \
-    -B $BCI_SQSH:/data/BCI:image-src=/ \
-    $CONTAINER \
+    -B "$VSC_DATA:$VSC_DATA" \
+    -B "$BCI_SQSH:$BCI_MNT:image-src=/" \
+    "$CONTAINER" \
     python "$EVAL_SCRIPT" \
         --pred         "$PRED_DIR" \
         --gt           "$GT_DIR" \
@@ -107,7 +114,7 @@ srun apptainer exec --nv \
         --output       "$OUTPUT_CSV" \
         --cellpose \
         --cellpose_model cpsam \
-        --cellpose_n   10
+        --cellpose_n   100
 
 echo ""
 echo "=== Results written ==="
