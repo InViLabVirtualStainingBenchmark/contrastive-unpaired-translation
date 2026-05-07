@@ -11,7 +11,7 @@
 #SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST.%j.out
 #SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/eval_MIST.%j.err
 
-# eval_MIST-HER2_full.sh
+# eval_MIST-HER2.sh
 # Runs evaluate.py on MIST-HER2 inference outputs using the shared evaluation container.
 # Computes PSNR, SSIM, MS-SSIM, LPIPS (AlexNet + VGG), MAE, FID,
 # and Cellpose cell-detection metrics (precision, recall, F1) on 100 sampled pairs.
@@ -22,17 +22,17 @@
 # Squashfs archives are therefore mounted to paths under $VSC_SCRATCH instead.
 #
 # Prerequisites:
-#   - infer_MIST-HER2_full.sh must have completed successfully
+#   - infer_MIST-HER2_e100.sh must have completed successfully
 #   - $VSC_SCRATCH/containers/evaluate_nvidia.sif must exist
 #   - $VSC_SCRATCH/MIST-HER2.sqsh must exist
 #   - LPIPS and Cellpose weights pre-downloaded on login node
 #
-# Submit: sbatch eval_MIST-HER2_full.sh
+# Submit: sbatch eval_MIST-HER2.sh
 
 set -euo pipefail
 
 CONTAINER="$VSC_SCRATCH/containers/evaluate_nvidia.sif"
-RUN_NAME="MIST-HER2_512_e100"
+RUN_NAME="MIST-HER2_e100"
 PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/test_latest/images/fake_B"
 MIST_SQSH="$VSC_SCRATCH/MIST-HER2.sqsh"
 MIST_MNT="$VSC_SCRATCH/sqsh_mnt/MIST-HER2"
@@ -74,7 +74,7 @@ echo ""
 echo "=== Prediction folder check ==="
 if [ ! -d "$PRED_DIR" ]; then
     echo "ERROR: Prediction folder not found: $PRED_DIR"
-    echo "Has infer_MIST-HER2_full.sh completed successfully?"
+    echo "Has infer_MIST-HER2_full_e100.sh completed successfully?"
     exit 1
 fi
 echo "  Prediction images: $(find "$PRED_DIR" -name '*.png' | wc -l)"
@@ -96,7 +96,7 @@ mkdir -p "$MIST_MNT"
 echo ""
 echo "=== Running evaluate.py ==="
 echo "  pred       : $PRED_DIR"
-echo "  gt         : $GT_DIR (inside MIST-HER2.sqsh mounted at $MIST_MNT)"
+echo "  gt         : $GT_DIR (valB inside MIST-HER2.sqsh mounted at $MIST_MNT)"
 echo "  output csv : $OUTPUT_CSV"
 echo "  cellpose   : cpsam, 100 pairs sampled"
 

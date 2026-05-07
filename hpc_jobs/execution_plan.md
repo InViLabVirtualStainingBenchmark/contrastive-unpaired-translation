@@ -294,10 +294,10 @@ Submit after the corresponding inference job has completed.
 
 ```bash
 # After infer_BCI_full.sh finishes:
-sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/eval_BCI_full.sh
+sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/eval_BCI.sh
 
 # After infer_MIST-HER2_full.sh finishes:
-sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/eval_MIST-HER2_full.sh
+sbatch $VSC_DATA/projects/cut/code/cut/hpc_jobs/eval_MIST-HER2.sh
 ```
 
 Both jobs append rows to `$VSC_DATA/benchmark_results.csv`.

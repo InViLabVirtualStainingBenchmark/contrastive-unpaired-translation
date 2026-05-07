@@ -11,7 +11,7 @@
 #SBATCH -o /data/antwerpen/212/vsc21212/projects/cut/logs/eval_BCI.%j.out
 #SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/eval_BCI.%j.err
 
-# eval_BCI_full.sh
+# eval_BCI.sh
 # Runs evaluate.py on BCI inference outputs using the shared evaluation container.
 # Computes PSNR, SSIM, MS-SSIM, LPIPS (AlexNet + VGG), MAE, FID,
 # and Cellpose cell-detection metrics (precision, recall, F1) on 100 sampled pairs.
@@ -22,21 +22,21 @@
 # Squashfs archives are therefore mounted to paths under $VSC_SCRATCH instead.
 #
 # Prerequisites:
-#   - infer_BCI_full.sh must have completed successfully
+#   - infer_BCI_e100.sh must have completed successfully
 #   - $VSC_SCRATCH/containers/evaluate_nvidia.sif must exist
-#   - $VSC_SCRATCH/BCI.sqsh must exist
+#   - $VSC_SCRATCH/BCI-AB.sqsh must exist
 #   - LPIPS and Cellpose weights pre-downloaded on login node
 #
-# Submit: sbatch eval_BCI_full.sh
+# Submit: sbatch eval_BCI.sh
 
 set -euo pipefail
 
 CONTAINER="$VSC_SCRATCH/containers/evaluate_nvidia.sif"
-RUN_NAME="BCI_512_e100"
+RUN_NAME="BCI_e100"
 PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/test_latest/images/fake_B"
-BCI_SQSH="$VSC_SCRATCH/BCI.sqsh"
+BCI_SQSH="$VSC_SCRATCH/BCI-AB.sqsh"
 BCI_MNT="$VSC_SCRATCH/sqsh_mnt/BCI"
-GT_DIR="$BCI_MNT/IHC/test"
+GT_DIR="$BCI_MNT/testB"
 OUTPUT_CSV="$VSC_DATA/benchmark_results.csv"
 EVAL_SCRIPT="$VSC_DATA/evaluate/evaluate.py"
 
@@ -65,16 +65,16 @@ apptainer exec --nv "$CONTAINER" python -c "import torch; print('torch:', torch.
 echo ""
 echo "=== SquashFS check ==="
 if [ ! -f "$BCI_SQSH" ]; then
-    echo "ERROR: BCI squashfs not found: $BCI_SQSH"
+    echo "ERROR: BCI-AB.sqsh not found: $BCI_SQSH"
     exit 1
 fi
-echo "  BCI.sqsh found"
+echo "  BCI-AB.sqsh found"
 
 echo ""
 echo "=== Prediction folder check ==="
 if [ ! -d "$PRED_DIR" ]; then
     echo "ERROR: Prediction folder not found: $PRED_DIR"
-    echo "Has infer_BCI_full.sh completed successfully?"
+    echo "Has infer_BCI_full_e100.sh completed successfully?"
     exit 1
 fi
 echo "  Prediction images: $(find "$PRED_DIR" -name '*.png' | wc -l)"
@@ -96,7 +96,7 @@ mkdir -p "$BCI_MNT"
 echo ""
 echo "=== Running evaluate.py ==="
 echo "  pred       : $PRED_DIR"
-echo "  gt         : $GT_DIR (inside BCI.sqsh mounted at $BCI_MNT)"
+echo "  gt         : $GT_DIR (testB inside BCI-AB.sqsh mounted at $BCI_MNT)"
 echo "  output csv : $OUTPUT_CSV"
 echo "  cellpose   : cpsam, 100 pairs sampled"
 

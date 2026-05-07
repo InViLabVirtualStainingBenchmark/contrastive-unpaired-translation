@@ -6,7 +6,7 @@
 # part 2 only starts if part 1 exits cleanly (no crash, no timeout).
 #
 # Usage (run from the repo root on the login node):
-#   bash hpc_jobs/512_e100/submit_MIST_e100.sh
+#   bash hpc_jobs/submit_MIST_e100.sh
 #
 # What happens:
 #   1. Part 1 is submitted immediately and queued normally.
@@ -21,7 +21,7 @@
 #   scancel <part1_jobid> <part2_jobid>
 #
 # After both jobs finish, submit inference:
-#   sbatch hpc_jobs/512_e100/infer_MIST-HER2_full_e100.sh
+#   sbatch hpc_jobs/infer_MIST-HER2_e100.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -49,8 +49,8 @@ echo "  Part 2 will only start if part 1 exits successfully."
 
 echo ""
 echo "Monitor with: squeue -u \$USER"
-echo "Part 1 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_512_p1.$JOB1.out"
-echo "Part 2 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_512_p2.$JOB2.out"
+echo "Part 1 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_p1.$JOB1.out"
+echo "Part 2 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_p2.$JOB2.out"
 echo ""
 echo "After both complete, submit inference:"
-echo "  sbatch hpc_jobs/512_e100/infer_MIST-HER2_full_e100.sh"
+echo "  sbatch hpc_jobs/infer_MIST-HER2_full_e100.sh"

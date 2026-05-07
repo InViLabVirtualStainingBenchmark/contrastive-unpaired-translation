@@ -1,0 +1,98 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+
+%post
+    apt-get update -y && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Mount-point directories for SquashFS dataset archives.
+    # BCI-AB.sqsh mounts at /data/BCI; MIST-HER2.sqsh mounts at /data/MIST-HER2.
+    # BCI-AB has trainA/trainB/testA/testB -- use --phase test (default) for inference.
+    # MIST-HER2 has trainA/trainB/valA/valB -- use --phase val for inference.
+    mkdir -p /data/BCI /data/MIST-HER2
+
+    pip install --no-cache-dir --upgrade pip
+
+    # === MODEL-SPECIFIC PACKAGES ===
+    # Matches CUT requirements.txt (dominate, packaging).
+    # visdom is intentionally excluded -- CUT only imports it when display_id > 0.
+    # Always pass --display_id 0 in job scripts.
+    pip install --no-cache-dir \
+        dominate \
+        packaging
+
+%labels
+    Author vsc21212
+    Model CUT
+    BaseImage pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+    PyTorch 2.6.0+cu124
+    Python 3.12
+    Benchmark InViLabVirtualStainingBenchmark
+
+%help
+    CUT (Contrastive Unpaired Translation) container for the InViLab virtual staining benchmark.
+    PyTorch 2.6.0+cu124. Compatible with the cluster CUDA 12.x driver.
+
+    IMPORTANT -- visdom is not installed. Always pass --display_id 0 to train.py.
+
+    DATASET LAYOUT NOTE:
+    BCI-AB.sqsh has trainA/trainB/testA/testB at its root. Use --phase test (default).
+    MIST-HER2.sqsh has trainA/trainB/valA/valB at its root. Use --phase val for
+    inference -- CUT constructs the folder name as {dataroot}/{phase}A and {phase}B,
+    so --phase val correctly resolves to valA/ and valB/ without any sqsh rebuild.
+
+    Training (BCI example):
+      apptainer exec --nv \
+        -B $VSC_DATA:$VSC_DATA \
+        -B $VSC_SCRATCH/BCI-AB.sqsh:/data/BCI:image-src=/ \
+        $VSC_SCRATCH/containers/cut_nvidia.sif \
+        python $VSC_DATA/projects/cut/code/contrastive-unpaired-translation/train.py \
+          --dataroot /data/BCI \
+          --name BCI_validate_e5 \
+          --CUT_mode CUT \
+          --load_size 1024 \
+          --crop_size 512 \
+          --display_id 0 \
+          --gpu_ids 0
+
+    Inference (BCI example):
+      apptainer exec --nv \
+        -B $VSC_DATA:$VSC_DATA \
+        -B $VSC_SCRATCH/BCI-AB.sqsh:/data/BCI:image-src=/ \
+        $VSC_SCRATCH/containers/cut_nvidia.sif \
+        python $VSC_DATA/projects/cut/code/contrastive-unpaired-translation/test.py \
+          --dataroot /data/BCI \
+          --name BCI_full_e200 \
+          --CUT_mode CUT \
+          --load_size 1024 \
+          --crop_size 1024 \
+          --display_id 0 \
+          --gpu_ids 0
+
+    Training (MIST-HER2 example):
+      apptainer exec --nv \
+        -B $VSC_DATA:$VSC_DATA \
+        -B $VSC_SCRATCH/MIST-HER2.sqsh:/data/MIST-HER2:image-src=/ \
+        $VSC_SCRATCH/containers/cut_nvidia.sif \
+        python $VSC_DATA/projects/cut/code/contrastive-unpaired-translation/train.py \
+          --dataroot /data/MIST-HER2 \
+          --name MIST-HER2_validate_e5 \
+          --CUT_mode CUT \
+          --load_size 1024 \
+          --crop_size 512 \
+          --display_id 0 \
+          --gpu_ids 0
+
+    Inference (MIST-HER2 example -- note --phase val):
+      apptainer exec --nv \
+        -B $VSC_DATA:$VSC_DATA \
+        -B $VSC_SCRATCH/MIST-HER2.sqsh:/data/MIST-HER2:image-src=/ \
+        $VSC_SCRATCH/containers/cut_nvidia.sif \
+        python $VSC_DATA/projects/cut/code/contrastive-unpaired-translation/test.py \
+          --dataroot /data/MIST-HER2 \
+          --name MIST-HER2_full_e200 \
+          --CUT_mode CUT \
+          --phase val \
+          --load_size 1024 \
+          --crop_size 1024 \
+          --display_id 0 \
+          --gpu_ids 0
