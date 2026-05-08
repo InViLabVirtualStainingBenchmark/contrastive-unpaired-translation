@@ -25,8 +25,8 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PART1="$SCRIPT_DIR/train_MIST-HER2_full_e100_part1.sh"
-PART2="$SCRIPT_DIR/train_MIST-HER2_full_e100_part2.sh"
+PART1="$SCRIPT_DIR/train_MIST-HER2_e100_part1.sh"
+PART2="$SCRIPT_DIR/train_MIST-HER2_e100_part2.sh"
 
 if [ ! -f "$PART1" ]; then
     echo "ERROR: $PART1 not found. Run this script from the repo root or check paths."
@@ -53,4 +53,4 @@ echo "Part 1 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_p1.$JOB1.out
 echo "Part 2 log:   tail -f \$VSC_DATA/projects/cut/logs/train_MIST_p2.$JOB2.out"
 echo ""
 echo "After both complete, submit inference:"
-echo "  sbatch hpc_jobs/infer_MIST-HER2_full_e100.sh"
+echo "  sbatch hpc_jobs/infer_MIST-HER2_e100.sh"
