@@ -33,10 +33,10 @@ set -euo pipefail
 
 CONTAINER="$VSC_SCRATCH/containers/evaluate_nvidia.sif"
 RUN_NAME="BCI_e100"
-PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/test_latest/images/fake_B"
+PRED_DIR="$VSC_DATA/projects/cut/outputs/results/$RUN_NAME/val_latest/images/fake_B"
 BCI_SQSH="$VSC_SCRATCH/BCI-AB.sqsh"
 BCI_MNT="$VSC_SCRATCH/sqsh_mnt/BCI"
-GT_DIR="$BCI_MNT/testB"
+GT_DIR="$BCI_MNT/valB"
 OUTPUT_CSV="$VSC_DATA/benchmark_results.csv"
 EVAL_SCRIPT="$VSC_DATA/evaluate/evaluate.py"
 
@@ -109,7 +109,7 @@ srun apptainer exec --nv \
         --gt           "$GT_DIR" \
         --model_name   cut \
         --dataset_name BCI \
-        --split_name   test \
+        --split_name   val \
         --match_by     stem \
         --output       "$OUTPUT_CSV" \
         --cellpose \

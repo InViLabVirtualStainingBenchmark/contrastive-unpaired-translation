@@ -12,15 +12,16 @@
 #SBATCH -e /data/antwerpen/212/vsc21212/projects/cut/logs/infer_BCI.%j.err
 
 # infer_BCI_e100.sh
-# Runs inference on the full BCI test split using the latest checkpoint
+# Runs inference on the full BCI val split using the latest checkpoint
 # from the BCI 100-epoch training run.
 # load_size 1024 / crop_size 1024 -- full resolution, no cropping at inference time.
+# --phase val: BCI-AB.sqsh has valA/valB (not testA/testB). Output goes to val_latest/.
 #
 # Submit ONLY after train_BCI_e100.sh has completed successfully.
 # Submit: sbatch infer_BCI_e100.sh
 #
 # Output images land at:
-#   $VSC_DATA/projects/cut/outputs/results/BCI_e100/test_latest/images/fake_B/
+#   $VSC_DATA/projects/cut/outputs/results/BCI_e100/val_latest/images/fake_B/
 #
 # Verify after job:
 #   find $VSC_DATA/projects/cut/outputs/results/BCI_e100 -name "*.png" | wc -l
@@ -109,6 +110,7 @@ srun apptainer exec --nv \
         --results_dir "$RESULTS_DIR" \
         --load_size 1024 \
         --crop_size 1024 \
+        --phase val \
         --num_test 9999 \
         --eval \
         --display_id 0 \
@@ -126,7 +128,7 @@ find "$RESULTS_DIR/$RUN_NAME" -name "*.png" | wc -l
 
 echo ""
 echo "=== Output folder structure ==="
-ls "$RESULTS_DIR/$RUN_NAME/test_latest/images/" 2>/dev/null || echo "WARNING: test_latest/images/ not found"
+ls "$RESULTS_DIR/$RUN_NAME/val_latest/images/" 2>/dev/null || echo "WARNING: val_latest/images/ not found"
 
 echo ""
 echo "BCI inference complete. Next step: sbatch eval_BCI_full.sh"
